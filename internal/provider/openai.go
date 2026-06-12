@@ -34,7 +34,7 @@ func NewZhipuOpenAIProvider(model string) *OpenAIProvider {
 }
 
 func (p *OpenAIProvider) Generate(ctx context.Context, msgs []schema.Message, availableTools []schema.ToolDefinition) (*schema.Message, error) {
-	fmt.Printf("-----------Generate msgs: %s\n", msgs)
+	//fmt.Printf("-----------Generate msgs: %s\n", msgs)
 	var openaiMsgs []openai.ChatCompletionMessageParamUnion
 
 	// 1. 翻译上下文消息
@@ -42,7 +42,7 @@ func (p *OpenAIProvider) Generate(ctx context.Context, msgs []schema.Message, av
 		switch msg.Role {
 		case schema.RoleSystem:
 			openaiMsgs = append(openaiMsgs, openai.SystemMessage(msg.Content))
-			fmt.Printf("-----------Generate schema.RoleSystem openaiMsgs: %s\n", openaiMsgs)
+			//fmt.Printf("-----------Generate schema.RoleSystem openaiMsgs: %s\n", openaiMsgs)
 		case schema.RoleUser:
 			if msg.ToolCallID != "" {
 				// 注意：v3 新版参数顺序是 (content, toolCallID)
@@ -50,7 +50,7 @@ func (p *OpenAIProvider) Generate(ctx context.Context, msgs []schema.Message, av
 			} else {
 				openaiMsgs = append(openaiMsgs, openai.UserMessage(msg.Content))
 			}
-			fmt.Printf("-----------Generate schema.RoleUser openaiMsgs: %s\n", openaiMsgs)
+			//fmt.Printf("-----------Generate schema.RoleUser openaiMsgs: %s\n", openaiMsgs)
 		case schema.RoleAssistant:
 			astParam := openai.ChatCompletionAssistantMessageParam{}
 
@@ -59,10 +59,10 @@ func (p *OpenAIProvider) Generate(ctx context.Context, msgs []schema.Message, av
 					OfString: openai.String(msg.Content),
 				}
 			}
-			fmt.Printf("-----------Generate schema.RoleAssistant openaiMsgs: %s\n", openaiMsgs)
+			//fmt.Printf("-----------Generate schema.RoleAssistant openaiMsgs: %s\n", openaiMsgs)
 			// 【重要】如果历史包含 ToolCalls，必须原样放回，以维系大模型的逻辑链
 			if len(msg.ToolCalls) > 0 {
-				fmt.Printf("-----------Generate msg.ToolCalls: %s\n", msg.ToolCalls)
+				//fmt.Printf("-----------Generate msg.ToolCalls: %s\n", msg.ToolCalls)
 				var toolCalls []openai.ChatCompletionMessageToolCallUnionParam
 				for _, tc := range msg.ToolCalls {
 					// OfFunction 对应 GetFunction()，字段类型严格要求为指针
@@ -85,7 +85,7 @@ func (p *OpenAIProvider) Generate(ctx context.Context, msgs []schema.Message, av
 			})
 		}
 	}
-	fmt.Printf("-----------Generate availableTools: %s\n", availableTools)
+	//fmt.Printf("-----------Generate availableTools: %s\n", availableTools)
 	// 2. 翻译工具定义 (v3 新 API 特性适配)
 	var openaiTools []openai.ChatCompletionToolUnionParam
 	for _, toolDef := range availableTools {
@@ -134,7 +134,7 @@ func (p *OpenAIProvider) Generate(ctx context.Context, msgs []schema.Message, av
 		Role:    schema.RoleAssistant,
 		Content: choice.Content,
 	}
-	fmt.Printf("-----------Generate choice: %s\n", choice)
+	//fmt.Printf("-----------Generate choice: %s\n", choice)
 	for _, tc := range choice.ToolCalls {
 		if tc.Type == "function" {
 			resultMsg.ToolCalls = append(resultMsg.ToolCalls, schema.ToolCall{
