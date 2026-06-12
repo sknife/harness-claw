@@ -6,6 +6,7 @@ import (
 	"log"
 	"sync"
 
+	ctxpkg "github.com/yourname/go-tiny-claw/internal/context"
 	"github.com/yourname/go-tiny-claw/internal/provider"
 	"github.com/yourname/go-tiny-claw/internal/schema"
 	"github.com/yourname/go-tiny-claw/internal/tools"
@@ -16,6 +17,7 @@ type AgentEngine struct {
 	registry       tools.Registry
 	WorkDir        string
 	EnableThinking bool
+	composer       *ctxpkg.PromptComposer // 【新增】
 }
 
 func NewAgentEngine(p provider.LLMProvider, r tools.Registry, workDir string, enableThinking bool) *AgentEngine {
@@ -24,20 +26,25 @@ func NewAgentEngine(p provider.LLMProvider, r tools.Registry, workDir string, en
 		registry:       r,
 		WorkDir:        workDir,
 		EnableThinking: enableThinking,
+		composer:       ctxpkg.NewPromptComposer(workDir), // 【初始化】
 	}
 }
 
 func (e *AgentEngine) Run(ctx context.Context, userPrompt string, reporter Reporter) error {
 	log.Printf("[Engine] 引擎启动，锁定工作区: %s\n", e.WorkDir)
 
+	// 【核心修改】动态组装 System Prompt
+	systemMsg := e.composer.Build()
+
 	contextHistory := []schema.Message{
-		{Role: schema.RoleSystem, Content: "You are go-tiny-claw, an expert coding assistant."},
+		systemMsg,
 		{Role: schema.RoleUser, Content: userPrompt},
 	}
 
 	for {
 		availableTools := e.registry.GetAvailableTools()
 
+		// Phase 1: Thinking
 		if e.EnableThinking {
 			if reporter != nil {
 				reporter.OnThinking(ctx)
@@ -52,6 +59,7 @@ func (e *AgentEngine) Run(ctx context.Context, userPrompt string, reporter Repor
 			}
 		}
 
+		// Phase 2: Action
 		actionResp, err := e.provider.Generate(ctx, contextHistory, availableTools)
 		if err != nil {
 			return fmt.Errorf("Action 阶段失败: %w", err)
@@ -63,10 +71,12 @@ func (e *AgentEngine) Run(ctx context.Context, userPrompt string, reporter Repor
 			reporter.OnMessage(ctx, actionResp.Content)
 		}
 
+		// 检查结束
 		if len(actionResp.ToolCalls) == 0 {
 			break
 		}
 
+		// 执行并发工具调用
 		observationMsgs := make([]schema.Message, len(actionResp.ToolCalls))
 		var wg sync.WaitGroup
 

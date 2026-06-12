@@ -34,7 +34,7 @@ func NewZhipuOpenAIProvider(model string) *OpenAIProvider {
 }
 
 func (p *OpenAIProvider) Generate(ctx context.Context, msgs []schema.Message, availableTools []schema.ToolDefinition) (*schema.Message, error) {
-	//fmt.Printf("-----------Generate msgs: %s\n", msgs)
+	fmt.Printf("-----------Generate msgs: %s\n", msgs)
 	var openaiMsgs []openai.ChatCompletionMessageParamUnion
 
 	// 1. 翻译上下文消息
