@@ -1,0 +1,9 @@
+.idea
+logs/*
+tmp/*
+.DS_Store
+.vscode
+.env.example
+.env
+.claude
+CLAUDE.md
