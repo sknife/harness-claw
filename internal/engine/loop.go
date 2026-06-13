@@ -16,42 +16,35 @@ type AgentEngine struct {
 	provider       provider.LLMProvider
 	registry       tools.Registry
 	EnableThinking bool
-	composer       *ctxpkg.PromptComposer
+	PlanMode       bool              // 【新增】暴露给外部的计划模式开关
 	compactor      *ctxpkg.Compactor // 【新增】压缩器实例
 }
 
 // 【注意】：我们移除了 Engine 层级的 WorkDir，因为 WorkDir 现在应该跟随 Session 走！
-func NewAgentEngine(p provider.LLMProvider, r tools.Registry, enableThinking bool) *AgentEngine {
+func NewAgentEngine(p provider.LLMProvider, r tools.Registry, enableThinking bool, planMode bool) *AgentEngine {
 	return &AgentEngine{
 		provider:       p,
 		registry:       r,
 		EnableThinking: enableThinking,
-		// (假装这里能获取到 WorkDir 初始化 Composer，生产环境中应在 Run 中动态构造)
-		composer: ctxpkg.NewPromptComposer("."),
-		// 【初始化压缩器】：为了便于今天的极端测试，我们将水位线阈值设积极（例如 3000 字符），
-		// 并保护最近的 6 条消息（大约两轮 Turn 的交互）
-		compactor: ctxpkg.NewCompactor(3000, 6),
+		PlanMode:       planMode,
+		compactor:      ctxpkg.NewCompactor(3000, 6),
 	}
 }
 
 func (e *AgentEngine) Run(ctx context.Context, session *ctxpkg.Session, reporter Reporter) error {
-	log.Printf("[Engine] 唤醒会话 [%s]，锁定工作区: %s\n", session.ID, session.WorkDir)
+	log.Printf("[Engine] 唤醒会话 [%s]，锁定工作区: %s (PlanMode: %v)\n", session.ID, session.WorkDir, e.PlanMode)
 
-	e.composer = ctxpkg.NewPromptComposer(session.WorkDir)
-	systemMsg := e.composer.Build()
+	// 在每次运行前，动态生成组装器并传入当前的 PlanMode 状态
+	composer := ctxpkg.NewPromptComposer(session.WorkDir, e.PlanMode)
+	systemMsg := composer.Build()
 
 	for {
 		availableTools := e.registry.GetAvailableTools()
-
-		// 1. 从 Session 提取出近期的 Working Memory (例如最近 20 条，给压缩器留下充足的判断空间)
 		workingMemory := session.GetWorkingMemory(20)
 
 		var contextHistory []schema.Message
 		contextHistory = append(contextHistory, systemMsg)
 		contextHistory = append(contextHistory, workingMemory...)
-
-		// 2. 【核心注入点】: 在向 Provider 发起推理前，过一遍内存压缩器！
-		// 无论你带出了多少上下文，如果字符总数超标，早期日志将被掩码化，超大日志将被掐头去尾
 		compactedContext := e.compactor.Compact(contextHistory)
 
 		// 3. 后续的 Provider.Generate 全面使用被保护过的新鲜上下文 (compactedContext)
