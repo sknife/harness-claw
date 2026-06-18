@@ -1,0 +1,68 @@
+{
+  "name": "Agent.Run",
+  "start_time": "2026-06-18T16:33:58.1124443+08:00",
+  "end_time": "2026-06-18T16:34:02.9140525+08:00",
+  "duration_ms": 4801,
+  "attributes": {
+    "SessionID": "test_trace_001",
+    "WorkDir": "E:\\go_project\\go-tiny-claw\\workspace"
+  },
+  "children": [
+    {
+      "name": "Turn-1",
+      "start_time": "2026-06-18T16:33:58.1124443+08:00",
+      "end_time": "2026-06-18T16:34:02.9140525+08:00",
+      "duration_ms": 4801,
+      "attributes": {
+        "context_message_count": 2
+      },
+      "children": [
+        {
+          "name": "LLM.Action",
+          "start_time": "2026-06-18T16:33:58.1124443+08:00",
+          "end_time": "2026-06-18T16:33:59.4222152+08:00",
+          "duration_ms": 1309
+        },
+        {
+          "name": "Tool.Execute",
+          "start_time": "2026-06-18T16:33:59.4222152+08:00",
+          "end_time": "2026-06-18T16:33:59.4235325+08:00",
+          "duration_ms": 1,
+          "attributes": {
+            "arguments": "{\"path\": \"trace_test.md\", \"content\": \"测试并发的写入\"}",
+            "output_preview": "成功将内容写入到文件: trace_test.md",
+            "tool_name": "write_file"
+          }
+        },
+        {
+          "name": "Tool.Execute",
+          "start_time": "2026-06-18T16:33:59.4229175+08:00",
+          "end_time": "2026-06-18T16:34:01.7702922+08:00",
+          "duration_ms": 2347,
+          "attributes": {
+            "arguments": "{\"command\": \"sleep 2 \u0026\u0026 echo \\\"系统环境检查完毕\\\"\"}",
+            "output_preview": "系统环境检查完毕\n",
+            "tool_name": "bash"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Turn-2",
+      "start_time": "2026-06-18T16:34:01.7702922+08:00",
+      "end_time": "2026-06-18T16:34:02.9140525+08:00",
+      "duration_ms": 1143,
+      "attributes": {
+        "context_message_count": 5
+      },
+      "children": [
+        {
+          "name": "LLM.Action",
+          "start_time": "2026-06-18T16:34:01.7702922+08:00",
+          "end_time": "2026-06-18T16:34:02.9133291+08:00",
+          "duration_ms": 1143
+        }
+      ]
+    }
+  ]
+}
